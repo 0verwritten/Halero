@@ -8,7 +8,9 @@ class SHA512PasswordHasher : IPasswordHasher{
     public string GetHash(string password){
 
         byte[] salt = new byte[256 / 8];
-        using (var rngCsp = new RNGCryptoServiceProvider())
+        
+
+        using (var rngCsp = RandomNumberGenerator.Create())
         {
             rngCsp.GetNonZeroBytes(salt);
         }

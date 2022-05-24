@@ -11,5 +11,9 @@ public class UserProfile{
     public bool IsVerified { get; set; } = false;
     public string? VerificationCode { get; set; } = null;
     public DateTime LastLogin { get; set; } = DateTime.Now;
-    public UserProfile() {}
+    public UserProfile() {
+        UserName = String.Empty;
+        ProfileName = String.Empty;
+        Email = String.Empty;
+    }
 }

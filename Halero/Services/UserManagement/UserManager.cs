@@ -104,11 +104,12 @@ class UserManager : IUserManager{
     public UMException<HttpResponse> LogInWithPassword( UserClaims user, string nonHashedPassword, HttpResponse response){
         UMException<HttpResponse> result = new UMException<HttpResponse>();
 
-        UserProfile loginningUser = usersProfiles.FindOne( (UserProfile dbUser) => user.Email == dbUser.Email || user.UserName == dbUser.UserName );
+        UserProfile? loginningUser = usersProfiles.FindOne( (UserProfile dbUser) => user.Email == dbUser.Email || user.UserName == dbUser.UserName );
         if(loginningUser is null){
             result.AddException(new Exception("User with those credentials not found :("));
         }
-        else if( passwordHasher.VerifyPassword(
+        else if( loginningUser.PasswordHash is not null && 
+                 passwordHasher.VerifyPassword(
                     loginningUser.PasswordHash, nonHashedPassword
                 )){
             result.AddRange(LogInUser(loginningUser, response));
@@ -130,8 +131,8 @@ class UserManager : IUserManager{
         }
 
         UserToken tokonUser = new UserToken(){
-            AccessToken = accessToken,
-            RefreshToken = refreshToken
+            AccessToken = accessToken!,
+            RefreshToken = refreshToken!
         };
 
         return result;
@@ -150,7 +151,7 @@ class UserManager : IUserManager{
         }
         
         var tokenData = await tokenGenerator.ExtractDataAsync(tokonUser.AccessToken);
-        var user = usersProfiles.FindOne( ( UserProfile person ) => person.ID == tokenData.UserID );
+        var user = usersProfiles.FindOne( ( UserProfile person ) => person.ID == tokenData!.UserID );
         if( user == null ){
             result.AddException(new Exception("User not found"));
             return result;
@@ -176,7 +177,7 @@ class UserManager : IUserManager{
         }
 
         var tokenData = await tokenGenerator.ExtractDataAsync(tokonUser.AccessToken);
-        var user = usersProfiles.FindOne( ( UserProfile person ) => person.ID == tokenData.UserID );
+        var user = usersProfiles.FindOne( ( UserProfile person ) => person.ID == tokenData!.UserID );
         if( user == null )
             return false;
 
@@ -193,12 +194,12 @@ class UserManager : IUserManager{
             DateStamp = DateTime.Now
         });
     }
-    public bool VerifyEmailToken(string emailToken, UserProfile user) => user.VerificationCode == emailToken
+    public bool VerifyEmailToken(string emailToken, UserProfile user) => user.VerificationCode == emailToken;
 
 
     public UMException<UserProfile> FindUserBy( Expression<Func<UserProfile, bool>> predicate ){
         UMException<UserProfile> result = new UMException<UserProfile>();
-        result.Value = usersProfiles.FindOne(predicate);
+        result.Value = usersProfiles.FindOne(predicate)!;
         return result;
     }
 

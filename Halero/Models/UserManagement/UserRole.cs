@@ -9,4 +9,8 @@ public class UserRole{
     public Guid ID { get; set; }
     public string RoleName { get; set; }
     public AuthorityRate AccessRate { get; set; }
+
+    public UserRole(){
+        RoleName = "player";
+    }
 }

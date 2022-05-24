@@ -73,7 +73,7 @@ class TokenGenerator : ITokenGenerator{
         return exceptions;
     }
 
-    public async Task<TokenBody> ExtractDataAsync( string token ){
+    public async Task<TokenBody?> ExtractDataAsync( string token ){
 
         var accessToken = token.Split(".");
 

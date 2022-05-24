@@ -4,11 +4,12 @@ using Halero.Services.UserManagement;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<DatabaseConfigModel>( builder.Configuration.GetSection("CredentialsManager") );
+builder.Services.Configure<DatabaseConfigModel>( builder.Configuration.GetSection("DatabaseConfig") );
 builder.Services.AddSingleton<MongoDBSessionManager>();
 builder.Services.AddTransient<IPasswordHasher, SHA512PasswordHasher>();
 builder.Services.AddTransient<ITokenSigner, TokenHMACSHA256Signer>();
 builder.Services.AddTransient<ITokenGenerator, TokenGenerator>();
+builder.Services.AddSingleton<IUserManager, UserManager>();
 
 // builder.Services.AddSingleton<WeatherSavingService>();
 

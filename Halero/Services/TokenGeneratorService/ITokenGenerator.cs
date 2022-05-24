@@ -9,5 +9,5 @@ interface ITokenGenerator{
     UserToken GenerateUserToken( UserProfile user );
     Task<UserToken> GenerateUserTokenAsync( UserProfile user );
     UMException<bool> IsTokenValid( UserToken token, UserProfile user );
-     Task<TokenBody> ExtractDataAsync( string token );
+     Task<TokenBody?> ExtractDataAsync( string token );
 }

@@ -8,7 +8,14 @@ public class UserClaims{
     public string Email { get; set; }
     public string PasswordHash { get; set; }
 
-    string ToString(){
+    UserClaims(){
+        UserName = String.Empty;
+        ProfileName = String.Empty;
+        Email = String.Empty;
+        PasswordHash = String.Empty;
+    }
+
+    public override string ToString(){
         return $"{UserName}.{Email}";
     }
     public List<Exception> Validate(bool validatePassword = true){
