@@ -8,7 +8,7 @@ public class UserClaims{
     public string Email { get; set; }
     public string PasswordHash { get; set; }
 
-    UserClaims(){
+    public UserClaims(){
         UserName = String.Empty;
         ProfileName = String.Empty;
         Email = String.Empty;

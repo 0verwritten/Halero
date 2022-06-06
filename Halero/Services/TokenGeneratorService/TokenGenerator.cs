@@ -31,7 +31,7 @@ class TokenGenerator : ITokenGenerator{
         await JsonSerializer.SerializeAsync<TokenBody>(jsonTokenData, new TokenBody{
             GenerationTime = DateTime.Now,
             UserID = user.ID,
-            lifeTimeSpan = 3 * 60 // for 3 hourse
+            lifeTimeSpan = 3 * 60 // for 3 hours
         });
         var accessToken = signer.SignToken( 
             Encoding.UTF8.GetString(jsonTokenData.ToArray()), accessSecret
@@ -41,7 +41,7 @@ class TokenGenerator : ITokenGenerator{
         await JsonSerializer.SerializeAsync<TokenBody>(jsonTokenData, new TokenBody{
             GenerationTime = DateTime.Now,
             UserID = user.ID,
-            lifeTimeSpan = 3 * 60, // for 3 hourse
+            lifeTimeSpan = 3 * 60, // for 3 hours
             SuperSecret = accessToken.Split(".")[2]
         });
         var refreshToken = signer.SignToken( 
@@ -58,16 +58,21 @@ class TokenGenerator : ITokenGenerator{
     public UMException<bool> IsTokenValid( UserToken token, UserProfile user ){
         UMException<bool> exceptions = new UMException<bool>(true);
         var accessToken = token.AccessToken.Split(".");
-        if(accessToken.Length != 3)
+        if(accessToken.Length != 3){
             exceptions.AddException(new Exception("Token format is invalid"));
-        else if(signer.SignToken(accessToken[1], accessSecret) != accessToken[2])
+            return exceptions;
+        }
+        var accessTokenData = JsonSerializer.Deserialize<TokenBody>( signer.Base64Decoder(accessToken[1]) );
+        if(signer.SignToken( signer.Base64Decoder(accessToken[1]), accessSecret) != token.AccessToken)
             exceptions.AddException(new Exception("That token is fraud"));
+        else if( (DateTime.Now - accessTokenData.GenerationTime).TotalMinutes > accessTokenData.lifeTimeSpan )
+            exceptions.AddException(new Exception("That token has expired"));
 
         var refreshToken = token.RefreshToken.Split(".");
         if(refreshToken.Length != 3)
             exceptions.AddException(new Exception("Token format is invalid"));
 
-        else if(signer.SignToken(refreshToken[1], accessSecret) != refreshToken[2])
+        else if(signer.SignToken( signer.Base64Decoder(refreshToken[1]), refreshSecret) != token.RefreshToken)
             exceptions.AddException(new Exception("Token is not valid"));
 
         return exceptions;
@@ -83,7 +88,7 @@ class TokenGenerator : ITokenGenerator{
             throw new Exception("Token angorithm is not supported");
 
 
-        return await JsonSerializer.DeserializeAsync<TokenBody>( new MemoryStream( Encoding.UTF8.GetBytes(accessToken[1]) ) );
+        return await JsonSerializer.DeserializeAsync<TokenBody>( new MemoryStream( Encoding.UTF8.GetBytes( signer.Base64Decoder(accessToken[1]) ) ) );
     }
 
 }

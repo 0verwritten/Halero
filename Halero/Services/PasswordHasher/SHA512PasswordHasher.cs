@@ -26,7 +26,7 @@ class SHA512PasswordHasher : IPasswordHasher{
             iterationCount: 100000,
             numBytesRequested: 512 / 8));
 
-        return Convert.ToBase64String( Encoding.UTF8.GetBytes($"{hashed}.{Encoding.Default.GetString(salt)}") );
+        return Convert.ToBase64String( Encoding.UTF8.GetBytes($"{hashed}.{Convert.ToBase64String(salt)}") );
     }
 
     public bool VerifyPassword(string passwordHash, string password){
@@ -35,8 +35,7 @@ class SHA512PasswordHasher : IPasswordHasher{
                                     ).Split(".");
 
         string salt = passwordData[1];
-        passwordHash = passwordData[0];
 
-        return GetHashWithSalt(password, Encoding.Default.GetBytes(salt)) == passwordHash;
+        return GetHashWithSalt(password, Convert.FromBase64String(salt)) == passwordHash;
     }
 }

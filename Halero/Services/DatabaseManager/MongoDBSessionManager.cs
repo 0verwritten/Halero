@@ -9,8 +9,8 @@ public class MongoDBSessionManager{
     private readonly IMongoDatabase mongoDatabase;
 
     public MongoDBSessionManager(IOptions<DatabaseConfigModel> databaseConfig){
-        mongoDatabase = new MongoClient(databaseConfig.Value.ConnectionStirng)
-                            .GetDatabase(databaseConfig.Value.DatabaseName);
+        mongoDatabase = new MongoClient(databaseConfig.Value.ConnectionString!)
+                            .GetDatabase(databaseConfig.Value.DatabaseName!);
     }
 
     public IMongoCollection<T> GetCollection<T>(string collectionName) => mongoDatabase.GetCollection<T>(collectionName);

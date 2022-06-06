@@ -1,0 +1,150 @@
+*{
+    font-family: 'Inter';
+    font-size: 20px;
+}
+
+body{
+    background-image: url("../imgs/bg.png");
+    background-color: #EAFEE7;
+}
+
+.generalPlate{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform: translate(-50%,-50%);
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    vertical-align: middle;
+    width:75%
+}
+
+.generalPlate > *{
+    margin: auto 0;
+}
+
+
+.panel{
+    background-color: #fff;
+    border-radius: 1em;
+    display: flex;
+    flex-direction: column;
+    width: 25em;
+    padding:1em 1.5em;
+    box-shadow: 0 0 1em #0002;
+    transition: 0.2s;
+}
+
+.panel > *{
+    margin-top:0.5em;
+}
+
+.controls{
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    margin-bottom: 1.5em;
+}
+
+.controls > button{
+    color:#868686;
+    border:none;
+    background-color: transparent;
+    transition: 0.2s;
+}
+
+.controls > button:disabled{
+    color:#000;
+}
+.controls > button:disabled:hover{
+    color:#666;
+}
+
+
+.logini{
+    display: flex;
+    flex-direction: column;
+}
+.inputo{
+    border:none;
+    background-color: #F9F9F9;
+    padding: 0.25em 0;
+    margin: 0.5em 0.75em;
+    width: 100%;
+    border-bottom: 2px solid #d3d3d3;
+    outline: none;
+    transition: 0.2s;
+}
+
+.inputo::placeholder{
+    color: #666;
+}
+.inputo::-ms-input-placeholder{
+    color: #666;
+}
+.inputo::-ms-input-placeholder{
+    color: #666;
+}
+
+.inputoBorder{
+    margin: 0.5em 0;
+    padding:0.1em;
+    display: flex;
+    background-color: #F9F9F9;
+    border-radius: 0.5em;
+}
+
+.inputo:focus{
+    border-bottom-color:#919090;
+}
+
+.result{
+    margin-top: 1em;
+    background-color: #99D1B7;
+    border:none;
+    border-radius: 0.5em;
+    padding:0.75em;
+    max-width: fit-content;
+    color:#fff;
+    margin-left: auto;
+    transition: 0.2s;
+    margin-top: 2em;
+}
+
+.result:hover{
+    background-color: #89c9ab;
+}
+
+.siteLogo{
+    /* position: absolute; */
+    /* top:50%; */
+    /* right: 25%; */
+    width:15em;
+    height:auto;
+    /* transform: translate(25%, -50%); */
+}
+
+@media only screen and ( max-width: 1024px ) {
+    .generalPlate{
+        position: static;
+        transform: translate(0,0);
+        width:100%;
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: center;
+    }
+    .siteLogo{
+        /* width:10em; */
+        margin-bottom: 1em;
+    }
+}
+
+@media only screen and (max-width: 606px) {
+    .panel{
+        width: 80%;
+    }
+    .siteLogo{
+        width:10vw;
+    }
+}

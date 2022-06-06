@@ -1,10 +1,12 @@
+using Halero.Models.UserManagement.Forms;
+
 namespace Halero.Models.UserManagement;
 
 //
 /// <summary>
 /// That's user management service exception
 /// </summary>
-class UMException<T> {
+public class UMException<T> {
     public List<Exception> Erorrs { get; private set; }
     private T? _val;
 
@@ -25,7 +27,7 @@ class UMException<T> {
     }
 
     public void AddException(Exception newException){
-        Erorrs.Append(newException);
+        Erorrs.Add(newException);
     }
     public void AddExceptionRange(IEnumerable<Exception> exceptions){
         Erorrs.AddRange(exceptions);
@@ -40,6 +42,19 @@ class UMException<T> {
     }
 
     public bool IsSuccessful(){
-        return Erorrs.Count() == 0;
+        return Erorrs.Count() == 0 && _val != null;
+    }
+
+    public static AuthenticationForm ToAuthenticationForm(UMException<UserToken> authenticationResponce){
+        var result = new AuthenticationForm();
+        if(authenticationResponce.IsSuccessful())
+            result.Token = (UserToken)authenticationResponce.Value;
+        else{
+            result.Errors = new List<string>();
+            foreach(var error in authenticationResponce.Erorrs){
+                result.Errors = result.Errors.Append(error.Message);
+            }
+        }
+        return result; 
     }
 }

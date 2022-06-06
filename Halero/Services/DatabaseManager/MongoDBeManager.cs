@@ -15,7 +15,7 @@ public class MongoDBManager<T> :  IDatabaseManager<T>{
 
     public void InsertOne(T elem) => collectionBase.InsertOne(elem);
     
-    public T? FindOne( Expression<Func<T, bool>> predicate ) => collectionBase.Find(predicate).FirstOrDefault<T>();
+    public T? FindOne( Expression<Func<T, bool>> predicate ) => collectionBase.Find(predicate).FirstOrDefault();
 
     public void DeleteOne( Expression<Func<T, bool>> predicate ) => collectionBase.DeleteOne(predicate);
     public void DeleteMany( Expression<Func<T, bool>> predicate ) => collectionBase.DeleteMany(predicate);

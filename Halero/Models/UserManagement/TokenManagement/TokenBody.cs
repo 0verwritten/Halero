@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Halero.Models.UserManagement.TokenManagement;
 
-class TokenBody{
+public class TokenBody{
     public DateTime GenerationTime { get; set; }
     public Guid UserID { get; set; }
     public int lifeTimeSpan { get; set; }

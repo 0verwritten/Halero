@@ -1,0 +1,13 @@
+.centrimo{
+    position:absolute;
+    top:50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    padding: 2em;
+    border-radius: 1em;
+    box-shadow: 0 0 0.5em #0003;
+}
+.centrimo h3{
+    margin: 1em 0 0 0;
+}

@@ -1,6 +1,6 @@
 namespace Halero.Services.UserManagement;
 
-interface ITokenSigner{
+public interface ITokenSigner{
     string SignToken( string payload, string secret );
     string Base64Encoder( string payload );
     string Base64Decoder( string basePayload);

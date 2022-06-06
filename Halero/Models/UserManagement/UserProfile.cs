@@ -1,6 +1,9 @@
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace Halero.Models.UserManagement;
 
 public class UserProfile{
+    [BsonId]
     public Guid ID { get; set; }
     public Guid RoleID { get; set; }
     public string UserName { get; set; }

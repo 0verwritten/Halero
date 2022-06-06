@@ -1,0 +1,71 @@
+:root{
+    --greenish: #99D1B7;
+}
+
+*{
+    font-family: 'Inter';
+    font-size: 20px;
+
+}
+
+body{
+    background-image: url(../imgs/bg_lighter.png);
+    background-color: #F7FFF5;
+}
+
+.navibar{
+    position: fixed;
+    top: -16em;
+    left:1em;
+    display: flex;
+    flex-direction: column;
+    z-index: 999;
+    transition: 0.5s;
+}
+
+.navibar.active{
+    top:1em;
+}
+
+.slider{
+    /* background-image: url(../imgs/arrow.svg); */
+    background-size: 2.5em;
+    background-repeat: no-repeat;
+    background-position: center;
+    width:  3.5em;
+    height: 3.5em;
+    padding:0;
+    border-radius: 0.5em;
+    border: none;
+    background-color: var(--greenish);
+    box-shadow: 0 0 0.5em #0003;
+    /* transition: 1s; */
+}
+.slider > img{
+    width: 2.5em;
+    padding-top: 7px;
+    /* margin: auto; */
+}
+
+.navibar.active .slider{
+    transform: rotate(180deg);
+}
+
+.linkList{
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    margin-bottom: 1em;
+    border-radius: 0.5em;
+    box-shadow: 0 0 0.5em #0003;
+}
+
+.hypernav{
+    border:none;
+    background-color: transparent;
+    padding: 1em 1em 1em 0.5em;
+    text-align: left;
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}

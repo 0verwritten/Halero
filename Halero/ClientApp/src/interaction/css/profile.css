@@ -1,0 +1,170 @@
+@font-face{
+    font-family: "chess";
+    src: url(./chessglyph-regular.d46eec97.woff2);
+}
+
+html, body{
+    padding:0;
+    margin:0;
+}
+
+.userProfello{
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items:  center;
+}
+
+.visitCard{
+    background-color: #FFF;
+    padding:2em;
+    display: grid;
+    grid-template-columns: 12.5em auto;
+    gap:3em;
+    width: 55em;
+    box-shadow: 0 0 1em #0003;
+}
+
+.profilePic{
+    border-radius: 100%;
+    width: 12.5em;
+    height:auto;
+}
+
+.cardData{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.5em;
+}
+
+.profileNamo{
+    font-size: 1.3em;
+    padding-left: 0;
+}
+
+.userName{
+    font-size: 0.8em;
+    color: #868686;
+}
+
+
+.generalization{
+    background-color: #FDFEE7E5;
+    width: 55em;
+    padding:1em;
+    display: grid;
+    grid-template-columns: calc(50% - 1em) calc(50% - 1em);
+    gap: 2em;
+}
+
+.commentInstance{
+    display: flex;
+    align-items: center;
+    gap:1em;
+    border-radius: 0.5em;
+    padding:0.5em;
+}
+
+.commentInstance:hover{
+    background-color:#EEEFC755;
+}
+
+.userPic{
+    border-radius: 100%;
+    height:3.5em;
+}
+
+.deleteComment{
+    background-image: url(../imgs/close.svg);
+    border:none;
+    height: 2em;
+    width:2em;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 1em;
+    margin-left:auto;
+    display: none;
+    cursor: pointer;
+}
+
+.commentBlock:hover .deleteComment{
+    display: inline;
+}
+
+.commentBase{
+    flex-direction: column;
+    display: flex;
+}
+
+.commentBlock{
+    height: 100%;
+
+}
+
+.commentPostBar{
+    height: fit-content;
+    display: flex;
+}
+
+.commentInputBox{
+    background-color: transparent;
+    border: none;
+    width: 100%;
+    border-bottom: 3px solid #585858;
+    outline: none;
+    margin: 0 1em 0 0.5em;
+}
+
+.commentInputBox::placeholder{
+    color: #666;
+}
+.commentInputBox::-ms-input-placeholder{
+    color: #666;
+}
+.commentInputBox::-ms-input-placeholder{
+    color: #666;
+}
+
+.commentPost{
+    border:none;
+    background-color: transparent;
+    background-image: url(../imgs/telegram.svg);
+    width:2em;
+    height:2em;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 1.4em;
+    color:transparent;
+    cursor: pointer;
+}
+
+.historyInstance{
+    background-color: #EEEFC7;
+    border-radius: 0.5em;
+    padding: 1.5em;
+    display: flex;
+    margin:auto;
+}
+
+.gameName{
+    margin: auto 0;
+}
+
+.result{
+    margin: 0 0 0 auto;
+}
+
+.result.snakeVictory{
+    background-image: url(../imgs/victory.svg);
+    width:1.5em;
+    background-size: 1.5em;
+    height:1.5em;
+    /* font-family: "chess"; */
+    /* font-size: 3em; */
+}
+
+.result.snakeVictory::before{
+    /* content: "\1F01"; */
+}

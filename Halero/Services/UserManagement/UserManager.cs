@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Http;
 using Halero.Models;
 using System.Web;
 using System.Linq.Expressions;
+using MongoDB.Bson;
+using Microsoft.Net.Http.Headers;
+using Microsoft.Extensions.Primitives;
 
 namespace Halero.Services.UserManagement;
 
@@ -14,8 +17,8 @@ class UserManager : IUserManager{
     private readonly IPasswordHasher passwordHasher;
     private readonly ITokenGenerator tokenGenerator;
 
-    private const string refreshTokenName = "sna_login";
-    private const string accessTokenName = "sna_logout";
+    private const string refreshTokenName = "refreshToken";
+    private const string accessTokenName = "accessToken";
 
     public UserManager( MongoDBSessionManager sessionManager, IPasswordHasher hasherOfPasswords, ITokenGenerator tokenGut ){
         usersRoles = new MongoDBManager<UserRole>(sessionManager, "UsersRoles");
@@ -25,14 +28,15 @@ class UserManager : IUserManager{
         tokenGenerator = tokenGut;
     }
 
-    public UMException<HttpResponse> SignUpUser(UserClaims user, HttpResponse response, string nonHashedPassword = "", bool autoLogin = false){
-        UMException<HttpResponse> result = new UMException<HttpResponse>();
+    public UMException<UserToken> SignUpUser(UserClaims user, string nonHashedPassword = "", bool autoLogin = false){
+        UMException<UserToken> result = new UMException<UserToken>();
 
         // validating all the fields in UserClaims
         result.AddExceptionRange(user.Validate(nonHashedPassword == ""));
 
         { // checking for user existance in database
             var existing_user = usersProfiles.FindOne( val => val.UserName == user.UserName || val.Email == user.Email );
+            Console.WriteLine(existing_user is not null && existing_user.UserName is not null && existing_user.UserName == user.UserName);
             if( existing_user is not null && existing_user.UserName is not null && existing_user.UserName == user.UserName){
                 result.AddException(new Exception("This username is already used"));
             }
@@ -44,10 +48,15 @@ class UserManager : IUserManager{
         if(nonHashedPassword != "")
             user.PasswordHash = passwordHasher.GetHash(nonHashedPassword);
 
+        Console.WriteLine($"password verification -> {passwordHasher.VerifyPassword(user.PasswordHash, nonHashedPassword)}");
+
+        if(result.Erorrs.Count != 0)
+            return result;
+
         UserRole? defaultRole = usersRoles.FindOne( ( UserRole user ) => user.AccessRate == AuthorityRate.Default && user.RoleName == "player" );
         if(defaultRole == null){
             defaultRole = new UserRole(){
-                ID = new Guid($"player.0"),
+                ID = Guid.NewGuid(),
                 RoleName = "player",
                 AccessRate = AuthorityRate.Default
             };
@@ -55,43 +64,38 @@ class UserManager : IUserManager{
         }
 
         UserProfile newUser = new UserProfile{
-            ID = new Guid( $"{user.ToString()}.{DateTime.Now}" ),
+            ID = Guid.NewGuid(),
             UserName = user.UserName,
             ProfileName = user.ProfileName,
             PasswordHash = user.PasswordHash,
+            Email = user.Email,
             RoleID = defaultRole.ID
         };
 
         usersProfiles.InsertOne(newUser);
 
         if(autoLogin)
-            result.AddRange(LogInUser(newUser, response));
+            result.AddRange(LogInUser(newUser));
 
         return result;
     }
 
-    public UMException<HttpResponse> LogInUser(UserProfile user, HttpResponse response){
-        UMException<HttpResponse> result = new UMException<HttpResponse>();
+    public UMException<UserToken> LogInUser(UserProfile user){
+        UMException<UserToken> result = new UMException<UserToken>();
 
-        if(usersProfiles.FindOne( (UserProfile dbUser) => dbUser == user ) != null){
-            
-
+        if(usersProfiles.FindOne( (UserProfile dbUser) => dbUser.UserName == user.UserName && dbUser.Email == user.Email && dbUser.PasswordHash == user.PasswordHash ) != null){
             UserToken tokens = tokenGenerator.GenerateUserToken(user);
             UserSession session = new UserSession(){
-                ID = new Guid($"{user.ID}.{DateTime.Now}"),
                 UserID = user.ID,
                 Token = tokens,
                 GenerationTime = DateTime.Now,
             };
-            response.Cookies.Append(accessTokenName, tokens.AccessToken);
-            response.Cookies.Append(refreshTokenName, tokens.RefreshToken);
 
-            result.Value = response;
+            result.Value = tokens;
 
             usersSessions.InsertOne(session);
 
-            usersSessions.DeleteMany( ( UserSession ses ) => DateTime.Now - ses.GenerationTime > TimeSpan.FromDays(7) );
-
+            // usersSessions.DeleteMany( ( UserSession ses ) => (DateTime.Now - (DateTime)(ses.GenerationTime.ToLocalTime())) > TimeSpan.FromDays(7) );
         }
         else{
             result.AddException(new Exception("No user found with those credentials"));
@@ -101,8 +105,8 @@ class UserManager : IUserManager{
 
     }
 
-    public UMException<HttpResponse> LogInWithPassword( UserClaims user, string nonHashedPassword, HttpResponse response){
-        UMException<HttpResponse> result = new UMException<HttpResponse>();
+    public UMException<UserToken> LogInWithPassword( UserClaims user, string nonHashedPassword){
+        UMException<UserToken> result = new UMException<UserToken>();
 
         UserProfile? loginningUser = usersProfiles.FindOne( (UserProfile dbUser) => user.Email == dbUser.Email || user.UserName == dbUser.UserName );
         if(loginningUser is null){
@@ -112,34 +116,39 @@ class UserManager : IUserManager{
                  passwordHasher.VerifyPassword(
                     loginningUser.PasswordHash, nonHashedPassword
                 )){
-            result.AddRange(LogInUser(loginningUser, response));
+            result.AddRange(LogInUser(loginningUser));
+        }else{
+            result.AddException(new Exception("Your credentials don't match. ()_-"));
         }
 
         return result;
     }
     private async Task<UMException<UserToken>> GetTokenFromRequestAsync( HttpRequest request ){
         return await Task.Run( () => {
-        UMException<UserToken> result = new UMException<UserToken>();
-                
-        string? accessToken = String.Empty, 
-                refreshToken = String.Empty;
-        if(!request.Cookies.TryGetValue(accessTokenName, out accessToken) 
-                || 
-            !request.Cookies.TryGetValue(refreshTokenName, out refreshToken)){
-            result.AddException(new Exception("Not enough tokens found"));
+            UMException<UserToken> result = new UMException<UserToken>();
+
+            string? accessToken = String.Empty;
+            string? refreshToken = String.Empty;
+            
+            if(!request.Cookies.TryGetValue(accessTokenName, out accessToken) 
+                    || 
+                !request.Cookies.TryGetValue(refreshTokenName, out refreshToken)){
+                result.AddException(new Exception("Not enough tokens found"));
+                return result;
+            }
+
+            UserToken tokonUser = new UserToken(){
+                AccessToken = accessToken!,
+                RefreshToken = refreshToken!
+            };
+
+            result.Value = tokonUser;
+
             return result;
-        }
-
-        UserToken tokonUser = new UserToken(){
-            AccessToken = accessToken!,
-            RefreshToken = refreshToken!
-        };
-
-        return result;
         });
     }
-    public async Task<UMException<HttpResponse>> UpdateTokenAsync( HttpRequest request, HttpResponse response ){
-        UMException<HttpResponse> result = new UMException<HttpResponse>();
+    public async Task<UMException<UserToken>> UpdateTokenAsync( HttpRequest request ){
+        UMException<UserToken> result = new UMException<UserToken>();
 
         UserToken tokonUser;
         var extractionResult = await GetTokenFromRequestAsync(request);
@@ -165,7 +174,7 @@ class UserManager : IUserManager{
         }
 
     
-        result.AddRange(LogInUser(user, response));
+        result.AddRange(LogInUser(user));
         return result;
     }
     public async Task<bool> VerifyTokenAsync(HttpRequest request){
@@ -182,6 +191,7 @@ class UserManager : IUserManager{
             return false;
 
         var validationResult = tokenGenerator.IsTokenValid(tokonUser, user);
+        
         if(!validationResult.IsSuccessful())
             return false;
 
@@ -197,6 +207,25 @@ class UserManager : IUserManager{
     public bool VerifyEmailToken(string emailToken, UserProfile user) => user.VerificationCode == emailToken;
 
 
+    public async Task<UMException<UserProfile>> GetCurrentUserAsync(HttpRequest request){
+        var result = new UMException<UserProfile>();
+        UserToken tokonUser;
+        try{
+            tokonUser = (await GetTokenFromRequestAsync(request)).Value;
+        }catch {
+            result.AddException(new Exception("Token verification failed"));
+            return result;
+        }
+
+        var tokenData = await tokenGenerator.ExtractDataAsync(tokonUser.AccessToken);
+        var user = usersProfiles.FindOne( ( UserProfile person ) => person.ID == tokenData!.UserID );
+        if( user == null )
+            result.AddException(new Exception("User not found"));
+        else
+            result.Value = user;
+
+        return result;
+    }
     public UMException<UserProfile> FindUserBy( Expression<Func<UserProfile, bool>> predicate ){
         UMException<UserProfile> result = new UMException<UserProfile>();
         result.Value = usersProfiles.FindOne(predicate)!;

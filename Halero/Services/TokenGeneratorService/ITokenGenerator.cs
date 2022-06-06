@@ -3,7 +3,7 @@ using Halero.Models.UserManagement.TokenManagement;
 
 namespace Halero.Services.UserManagement;
 
-interface ITokenGenerator{
+public interface ITokenGenerator{
     string GenerateToken<T>( T payload );
     Task<string> GenerateTokenAsync<T>( T payload );
     UserToken GenerateUserToken( UserProfile user );
