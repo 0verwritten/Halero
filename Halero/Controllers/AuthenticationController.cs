@@ -4,6 +4,7 @@ using Halero.Models.UserManagement;
 using Halero.Models.UserManagement.Forms;
 using System.Security.Cryptography;
 using System.Text;
+using Halero.Services;
 
 namespace Halero.Controllers;
 
@@ -12,10 +13,12 @@ namespace Halero.Controllers;
 public class AuthenticationController: ControllerBase{
     public readonly ILogger<AuthenticationController> _logger;
     public readonly IUserManager _userManager;
+    public readonly MD5PasswordHasher _emailHasher;
 
     public AuthenticationController(ILogger<AuthenticationController> logger, IUserManager userManager){
         _logger = logger;
         _userManager = userManager;
+        _emailHasher = new MD5PasswordHasher();
     }
 
     [ActionName("Register")]
@@ -52,20 +55,6 @@ public class AuthenticationController: ControllerBase{
         return await _userManager.VerifyTokenAsync(Request);
     }
 
-    private string CreateMD5Hash(string input)
-    {
-        MD5 hasher = MD5.Create();
-        byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
-        byte[] hashBytes = hasher.ComputeHash(inputBytes);
-        
-        StringBuilder buildingString = new StringBuilder();
-        for (int i = 0; i < hashBytes.Length; i++)
-        {
-            buildingString.Append(hashBytes[i].ToString("X2"));
-        }
-        return buildingString.ToString();
-    }
-
     [ActionName("ProfileInfo")]
     [HttpPost]
     public async Task<UserProfileCard?> GetProfileInfoAsync(){
@@ -75,7 +64,7 @@ public class AuthenticationController: ControllerBase{
             var userCard = new UserProfileCard {
                 profileName = user.Value.ProfileName,
                 userName = user.Value.UserName,
-                pictureUri = $"https://www.gravatar.com/avatar/{ CreateMD5Hash(user.Value.Email) }?d=identicon&s=500"
+                pictureUri = $"https://www.gravatar.com/avatar/{ _emailHasher.GetHash(user.Value.Email) }?d=identicon&s=500"
             };
             return userCard;
         }

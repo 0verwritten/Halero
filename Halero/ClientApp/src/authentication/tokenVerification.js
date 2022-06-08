@@ -5,13 +5,12 @@ export function verifyToken(){
       return fetch("/api/authentication/checkToken", { method: "POST" })
           .then(e => e.text()).then( data => {
               console.log(data);
-              if(!data){
+              if(data == "false"){
                   if( cookies.hasItem("accessToken") && cookies.hasItem("refreshToken") ){
-                      refreshToken();
-                      verifyToken();
+                        return refreshToken();
                   }
-                  cookies.removeItem("accessToken");
-                  cookies.removeItem("refreshToken");
+                  cookies.removeItem("accessToken", "/");
+                  cookies.removeItem("refreshToken", "/");
                   return false;
               }else{
                   return true;
@@ -27,9 +26,10 @@ function refreshToken(){
           cookies.setItem("refreshToken", responce.token.refreshToken);
           cookies.setItem("accessToken", responce.token.accessToken);
       }else{
-          cookies.removeItem("accessToken");
-          cookies.removeItem("refreshToken");
+          cookies.removeItem("accessToken", "/");
+          cookies.removeItem("refreshToken", "/");
       }
       window.location.reload();
-  });
+      return responce.token != null;
+  }).finally();
 }

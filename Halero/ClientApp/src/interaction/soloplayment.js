@@ -7,15 +7,17 @@ export class SoloPlayment extends React.Component{
         super(props);
 
         this.state = {
-            tail: [ [150, 150] ],
+            tail: [ [100, 150] ],
             candies: [],
-            direction: 0, // 0 - right, 1 - left, 2 - top, 3 - down
+            direction: 1, // 0 - left, 1 - right, 2 - top, 3 - down
             speed: 2,
             size: 10,
             extend: 0,
             width: 300,
             height: 300,
             score: 0,
+            snakeColor: "#C80000",
+            foodColor: "#FF8888",
             gameUpdate: null,
         };
 
@@ -48,11 +50,11 @@ export class SoloPlayment extends React.Component{
         if( y < 0 )     y = 290;
 
         
-        let candies     = this.cheackForCandies(x,y, field);
+        let candies = this.cheackForCandies(x,y, field);
         if(candies.length === 0){
             candies = this.getNewCandies(candies, field)
         }
-        field.fillStyle = 'rgb(200, 0, 0)';
+        field.fillStyle = this.state.snakeColor;
         field.fillRect( x, y, this.state.size, this.state.size );
 
         // if(Math.abs(tail[0][0] - x) >= 10 || Math.abs(tail[0][1] - y) >= 10){
@@ -119,8 +121,7 @@ export class SoloPlayment extends React.Component{
                     return  !this.checkInterception(piece, [x,y]);
                 }));
         candies.push([ x, y ]);
-        
-        field.fillStyle = "#000000";
+        field.fillStyle = this.state.foodColor;
         field.beginPath();
         field.arc(x + circleR, y + circleR, circleR, 0, 2 * Math.PI, false);
         field.fill();
@@ -132,13 +133,7 @@ export class SoloPlayment extends React.Component{
         let newDirection = direction;
 
         if(e.keyCode == 80){
-            if(this.state.gameUpdate != null){
-                clearInterval(this.state.gameUpdate);
-                this.setState( { gameUpdate: null } );
-                toast.info("Game is on pause", { autoClose: 3000 });
-            }else{
-                this.setState( { gameUpdate: setInterval( () => this.updateFrame(), 1000/60 ) } );
-            }
+            this.toggleGamePause();
         }
         if(this.state.gameUpdate == null)
             return;
@@ -162,8 +157,27 @@ export class SoloPlayment extends React.Component{
             this.setState( { direction: newDirection } );
     }
 
+    toggleGamePause( turnGameOff = null ){
+        if(this.state.gameUpdate != null && turnGameOff == null || !turnGameOff){
+            clearInterval(this.state.gameUpdate);
+            this.setState( { gameUpdate: null } );
+            toast.info("Game is on pause", { autoClose: 3000 });
+        }else if(turnGameOff || this.state.gameUpdate == null && turnGameOff == null){
+            this.setState( { gameUpdate: setInterval( () => this.updateFrame(), 1000/60 ) } );
+        }
+    }
+
     startGame(e){
-        this.setState({ gameUpdate: setInterval( () => this.updateFrame(), 1000/60 ) });
+        this.setState({ candies: ["initial"] });
+        setTimeout( () =>{
+            let field = this.canvas.current.getContext('2d');
+            let candies = this.getNewCandies([], field);
+            this.setState({ 
+                gameUpdate: setInterval( () => this.updateFrame(), 1000/60 ), 
+                candies: candies,
+            })
+        }, 300);
+        
     }
     getControllsInfo(){
         toast.info("To rotate the snake use:  ← ↑ → ↓ ")
@@ -176,22 +190,28 @@ export class SoloPlayment extends React.Component{
         return (
             <>
             <div className="gamePlate singleUser">
-                <div className="userPlate yours">
-                    <div className="score">
-                        Score: <span>{ this.state.score }</span>
+                
+                {
+                    this.state.candies.length != 0 ?
+                    <div className="userPlate yours">
+                        <div className="score">
+                            Score: <span>{ this.state.score }</span>
+                        </div>
                     </div>
-                </div>
-                <canvas className="gamePlayCanvas solo" width="300" height="300" ref={this.canvas}/>
+                    : null
+                }
+                <canvas className={ "gamePlayCanvas " + ( this.state.candies.length != 0 ? "solo" : "" ) } width="300" height="300" ref={this.canvas}/>
+                { 
+                    this.state.candies.length == 0 ?
+                            <div className="introduction">
+                                <button onClick={e => this.startGame(e)} className="startGameBtn">Start Game</button>
+                                <button onClick={() => this.getControllsInfo()} className="controllsGameBtn">Controlls</button>
+                            </div> 
+                        :
+                            null
+                }
             </div>
-            { 
-                this.state.candies.length == 0 ?
-                        <div className="introduction">
-                            <button onClick={e => this.startGame(e)} className="startGameBtn">Start Game</button>
-                            <button onClick={() => this.getControllsInfo()} className="ControllsGameBtn">Controlls</button>
-                        </div> 
-                    :
-                        null
-            }
+            
             </>
         );
     }

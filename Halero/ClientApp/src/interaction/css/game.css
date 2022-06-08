@@ -6,6 +6,7 @@
 .gamePlate{
     margin:auto;
     display: flex;
+    position: relative;
     gap: 1em;
     justify-content: center;
     /* align-items: center; */
@@ -70,6 +71,61 @@
     margin-left:auto;
 }
 
+.introduction{
+    position:absolute;
+    top:50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    flex-direction: column;
+}
+
+.introduction > * {
+    margin:1em;
+
+}
+
+.startGameBtn{
+    background-color: #f85d5d;
+    color: #fff9f9;
+    border: 1px solid #750b0b;
+    border-radius: 0.5em;
+    padding: 0.5em 1em;
+    transition: 0.2s;
+}
+
+.startGameBtn:hover{
+    background-color: #ec4d4d;
+}
+
+.startOnlineGameBtn{
+    background-color: #8090e9;
+    color: #fff9f9;
+    border: 1px solid #4124a8;
+    border-radius: 0.5em;
+    padding: 0.5em 1em;
+    transition: 0.2s;
+}
+
+.startOnlineGameBtn:hover{
+    background-color: #7182e4;
+}
+
+
+.controllsGameBtn{
+    background-color: #FCB1A6;
+    color:#fff;
+    border-radius: 0.5em;
+    padding: 0.25em 0.5em;
+    border: 1px solid #c0837a;
+    transition: 0.2s;
+}
+
+.controllsGameBtn:hover{
+    background-color: #f8a89c;
+}
+
 @media screen and (max-width: 1400px){
     .gamePlate{
         flex-wrap: wrap;
@@ -100,7 +156,8 @@
         margin-left:0;
     }
     .profileName{
-        padding: 0.75em 1.5em;
+        padding: 1.162em 1.5em;
+        /* padding: 0.75em 1.5em; */
         text-align: left;
     }
     .score{

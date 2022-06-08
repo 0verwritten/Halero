@@ -1,12 +1,15 @@
 using Halero.Models;
 using Halero.Services;
 using Halero.Services.UserManagement;
+using Halero.Services.GameManagement;
 using Halero.Controllers;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<DatabaseConfigModel>( builder.Configuration.GetSection("DatabaseConfig") );
 builder.Services.AddSingleton<MongoDBSessionManager>();
+builder.Services.AddSingleton<IGameManager, GameManager>();
 builder.Services.AddTransient<IPasswordHasher, SHA512PasswordHasher>();
 builder.Services.AddTransient<ITokenSigner, TokenHMACSHA256Signer>();
 builder.Services.AddTransient<ITokenGenerator, TokenGenerator>();
@@ -46,9 +49,16 @@ if (app.Environment.IsDevelopment())
 
 // app.UseAuthorization();
 
+var webSocketOptions = new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromMinutes(2)
+};
+
+app.UseWebSockets(webSocketOptions);
+// app.UseWebSockets();
+
 app.UseStaticFiles();
 app.UseRouting();
-
 
 app.MapControllerRoute(
     name: "default",
@@ -60,3 +70,12 @@ app.MapFallbackToFile("index.html");;
 // app.MapControllers();
 
 app.Run();
+// app.Run(async (context) =>
+// {
+//     using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+//     var socketFinishedTcs = new TaskCompletionSource<object>();
+
+//     BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
+
+//     await socketFinishedTcs.Task;
+// });
