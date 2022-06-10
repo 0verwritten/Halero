@@ -1,7 +1,7 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import React from 'react';
-import ReactDOM from 'react-dom';
-import cookies from "js-cookies";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import { getCookie } from 'typescript-cookie';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { AuthenticationPage } from "./authentication/authentication-layout";
@@ -11,14 +11,19 @@ import { SoloPlayment } from "./interaction/soloplayment";
 import { MultiplayerPlayment } from "./interaction/multiplayment";
 import { MaintenancePage } from "./interaction/maintenance-content";
 
-export class Pager extends React.Component{
-    constructor(props){
+type PagerStates = {
+    accessToken: string | undefined;
+    refreshToken: string | undefined;
+}
+
+export class Pager extends React.Component<{}, PagerStates>{
+
+    constructor(props: {}){
         super(props);
         
         this.state = {
-            accessToken: cookies.getItem("accessToken"),
-            refreshToken: cookies.getItem("refreshToken"),
-            loginining: null
+            accessToken: getCookie("accessToken"),
+            refreshToken: getCookie("refreshToken")
         };
 
         // this.verifyToken()
@@ -28,15 +33,13 @@ export class Pager extends React.Component{
     
 
     render(){ 
-        const preventDefault = (event) => event.preventDefault();
 
-        if(this.state.accessToken == null || this.state.refreshToken == null){
-            if( document.location.pathname != "/" ){
+        if(this.state.accessToken === undefined || this.state.refreshToken === undefined){
+            if( document.location.pathname !== "/" ){
                 document.location.pathname = "/";
             }
             return (<> <AuthenticationPage /> </>);
         }
-
         return (
         <BrowserRouter>
 

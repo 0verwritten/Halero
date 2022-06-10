@@ -69,7 +69,7 @@ public class SnakeManagerController: ControllerBase
                 if(updateMessage != null){
                     byte[] responceBytes = new byte[0];
                     if(!gameStarted){
-                        var gameInfo = _gameManager.QuickStart( user.ID, webSocket );
+                        var gameInfo = _gameManager.QuickStart( user.ID, webSocket, null );
                         if(gameInfo.SecondPlayer == null){
                             var responce = JsonSerializer.Serialize(new GameUpdate(){
                                 ID = gameInfo.ID,
@@ -81,10 +81,17 @@ public class SnakeManagerController: ControllerBase
                             gameSession = _gameManager.GetSession(gameInfo.ID);
                             var responce = JsonSerializer.Serialize<GameSessionData>( _gameManager.GetSession(gameInfo.ID) );
                             responceBytes = Encoding.UTF8.GetBytes(responce);
-                            isPlayerInitiator = false;
-                            
 
-                            await gameSession.FirstUser.Socket.SendAsync(
+                            _logger.LogInformation(responce);
+                            isPlayerInitiator = gameSession.FirstUser.ID == user.ID;
+                            
+                            _gameManager.UpdateSessionSocket(gameInfo.ID, user.ID, webSocket);
+
+                            if((gameSession.GetUserSession(!isPlayerInitiator).ID == user.ID))
+                                isPlayerInitiator = !isPlayerInitiator;
+                            if((gameSession.GetUserSession(!isPlayerInitiator).ID == user.ID))
+                                _logger.LogError("somehting is wrong");
+                            await gameSession.GetUserSession(!isPlayerInitiator).Socket!.SendAsync(
                                 new ArraySegment<byte>(responceBytes, 0, responceBytes.Length),
                                 WebSocketMessageType.Text,
                                 true,
@@ -107,7 +114,7 @@ public class SnakeManagerController: ControllerBase
                             break;
                         }
                         if(updateMessage.direction is not null || updateMessage.candies is not null){
-                            await gameSession!.GetUserSession(!isPlayerInitiator).Socket.SendAsync(
+                            await gameSession!.GetUserSession(!isPlayerInitiator).Socket!.SendAsync(
                                 new ArraySegment<byte>(buffer, 0, receiveResult.Count),
                                 WebSocketMessageType.Text,
                                 true,
@@ -134,11 +141,32 @@ public class SnakeManagerController: ControllerBase
         }
 
         _logger.LogWarning("session ended");
-        _gameManager.EndSession((Guid)gameID!);
-        await webSocket.CloseAsync(
-            receiveResult.CloseStatus.Value,
-            receiveResult.CloseStatusDescription,
-            CancellationToken.None);
+        try{
+            var session = _gameManager.GetSession((Guid)gameID!);
+            var pauseRequest = new GameUpdate(){
+                ID = gameID,
+                gamePause = true
+            };
+
+            await session.GetUserSession(!isPlayerInitiator).Socket!.SendAsync(
+                new ArraySegment<byte>( 
+                    Encoding.UTF8.GetBytes(
+                        JsonSerializer.Serialize<GameUpdate>( pauseRequest )
+                    ) 
+                ),
+                WebSocketMessageType.Text,
+                true,
+                CancellationToken.None
+            );
+
+            session.GetUserSession(isPlayerInitiator).Socket = null;
+        }catch(KeyNotFoundException){
+            _gameManager.EndSession((Guid)gameID!);
+            await webSocket.CloseAsync(
+                receiveResult.CloseStatus.Value,
+                receiveResult.CloseStatusDescription,
+                CancellationToken.None);
+        }
     }    
 
 }

@@ -5,10 +5,9 @@ import { Pager } from './page-manager';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import { verifyToken } from './authentication/tokenVerification';
 
-
-verifyToken();
-setInterval( () => verifyToken(), 60 * 60 * 1000);
-const root = ReactDOM.createRoot(document.getElementById('root'));
+// verifyToken();
+// setInterval( () => verifyToken(), 60 * 60 * 1000);
+const root = ReactDOM.createRoot(document.getElementById('root')!);
 root.render(
   <React.StrictMode>
     <Pager />

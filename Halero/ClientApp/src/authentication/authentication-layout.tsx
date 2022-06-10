@@ -1,12 +1,12 @@
 import React from 'react';
 import { Logino } from './login-page';
 import { Registro } from './register-page';
-import image from './imgs/icon.png';
+import * as image  from './imgs/icon.png';
 import { ToastContainer } from 'react-toastify';
 
 
-export class AuthenticationPage extends React.Component{
-    constructor(props){
+export class AuthenticationPage extends React.Component<{}, {isLogin: boolean}>{
+    constructor(props: {}){
         super(props);
 
         this.state = {
@@ -37,7 +37,7 @@ export class AuthenticationPage extends React.Component{
                     </div>
                     { (() => this.state.isLogin ? <Logino /> : <Registro />)() }
                 </div>
-                <img className="siteLogo" src={ image } alt="GameLogo" />
+                <img className="siteLogo" src={ image.default } alt="GameLogo" />
             </div>
             </>
         );

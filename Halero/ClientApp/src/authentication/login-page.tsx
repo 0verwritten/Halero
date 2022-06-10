@@ -1,9 +1,11 @@
 import React from 'react';
-import cookies from "js-cookies";
+import { setCookie } from "typescript-cookie";
 import { toast } from 'react-toastify';
+import { AuthenticationForm } from "../models/authentication-models";
 
-export class Logino extends React.Component{
-    constructor(props){
+type LoginStates = {username: string, password: string};
+export class Logino extends React.Component<{}, LoginStates>{
+    constructor(props: {}){
         super(props);
 
         this.state = {
@@ -11,20 +13,11 @@ export class Logino extends React.Component{
             password: ""
         }
     }
-    handleInput(event){
-        let target = event.target;
-        let name = target.name;
-        let value = target.value;
 
-        this.setState({ [name]: value });
-    }
-
-    handleSubmit(e){
+    handleSubmit(e: React.FormEvent<HTMLFormElement>){
         e.preventDefault();
         const username = this.state.username;
         const password = this.state.password;
-        // fetch("/api/authentication/login", { userName: username, password: password, method: "post" })
-        //         .finally();
 
 
         fetch(`/api/authentication/Login`, { 
@@ -38,13 +31,13 @@ export class Logino extends React.Component{
                         password: password
                     })
                 }).then(res => res.json() )
-                    .then( responce => {
+                    .then( (responce: AuthenticationForm) => {
                         if(responce.token != null){
-                            cookies.setItem("refreshToken", responce.token.refreshToken);
-                            cookies.setItem("accessToken", responce.token.accessToken);
+                            setCookie("refreshToken", responce.token!.refreshToken);
+                            setCookie("accessToken", responce.token!.accessToken);
                             window.location.reload();
                         }else{
-                            responce.errors.forEach( error => toast.error(error) );
+                            responce.errors!.forEach( error => toast.error(error) );
                         }
                     });
     }
@@ -55,11 +48,11 @@ export class Logino extends React.Component{
             <form className="logini" onSubmit={e => this.handleSubmit(e)}>
                 <div className="inputoBorder">
                     <input className="inputo" name="username" placeholder="Username or Email" type="text" required
-                            onChange={ e => this.handleInput(e) }/>
+                            onChange={ e => this.setState({ username: e.target.value }) }/>
                 </div>
                 <div className="inputoBorder">
                     <input className="inputo" name="password" placeholder="Password" type="password"  required
-                            onChange={ e => this.handleInput(e) }/>
+                            onChange={ e => this.setState({ password: e.target.value }) }/>
                 </div>
                 <input type="submit" className="result" value="Log in" />
             </form>

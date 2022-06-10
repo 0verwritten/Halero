@@ -58,18 +58,21 @@ public class AuthenticationController: ControllerBase{
     [ActionName("ProfileInfo")]
     [HttpPost]
     public async Task<UserProfileCard?> GetProfileInfoAsync(){
-        var user = await _userManager.GetCurrentUserAsync(Request);
-        if(user.IsSuccessful()){
-            MD5 hasher = MD5.Create();
-            var userCard = new UserProfileCard {
-                profileName = user.Value.ProfileName,
-                userName = user.Value.UserName,
-                pictureUri = $"https://www.gravatar.com/avatar/{ _emailHasher.GetHash(user.Value.Email) }?d=identicon&s=500"
-            };
-            return userCard;
-        }
-
-        Response.StatusCode = 404;
-        return null; 
+        UMException<UserProfile>? user;
+        try{
+            user = await _userManager.GetCurrentUserAsync(Request);
+            if(user.IsSuccessful()){
+                MD5 hasher = MD5.Create();
+                var userCard = new UserProfileCard (
+                    user.Value.ProfileName,
+                    user.Value.UserName,
+                    $"https://www.gravatar.com/avatar/{ _emailHasher.GetHash(user.Value.Email) }?d=identicon&s=500"
+                );
+                return userCard;
+            }
+        } 
+        catch ( Exception ){ }
+            Response.StatusCode = 404;
+            return null;
     }
 }

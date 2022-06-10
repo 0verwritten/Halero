@@ -34,7 +34,19 @@ public class GameManager : IGameManager{
             activeSessions[sessionId].candies = gameUpdate.candies;
     }
 
-    public GameSessionData GetSession(Guid sessionID) => activeSessions[sessionID];
+    public void UpdateSessionSocket(Guid sessionId, Guid userId, WebSocket newSocker){
+        if(activeSessions[sessionId].FirstUser.ID == userId)
+            activeSessions[sessionId].FirstUser.Socket = newSocker;
+        if(activeSessions[sessionId].SecondUser.ID == userId)
+            activeSessions[sessionId].SecondUser.Socket = newSocker;
+    }
+
+    public GameSessionData GetSession(Guid sessionID) {
+        if(gameSessioner.FindOne( (GameSessionCard card) => card.ID == sessionID) is not null)
+            return activeSessions[sessionID];
+        else
+            throw new KeyNotFoundException();
+    }
 
     public GameSessionCard CreateSession(Guid UserId, WebSocket socket){
         GameSessionCard newSession = new GameSessionCard(
@@ -56,7 +68,13 @@ public class GameManager : IGameManager{
         return true;
     }
     
-    public GameSessionCard QuickStart(Guid userId, WebSocket socket){
+    public GameSessionCard QuickStart(Guid userId, WebSocket socket, string? gameSessionFromCookie){
+        if(gameSessionFromCookie != null){
+            try{
+                Console.WriteLine("session reload");
+                return gameSessioner.FindOne( (sesion) => sesion.ID.ToString() == gameSessionFromCookie )!;
+            }catch(KeyNotFoundException) {}
+        }
         GameSessionCard resulting = new GameSessionCard();
         if(!JoinSession(userId, ref resulting, socket))
             return CreateSession(userId, socket);
@@ -71,4 +89,8 @@ public class GameManager : IGameManager{
 
     public GameSessionCard? GetCurrentSessionByUserID(Guid userId) => gameSessioner.FindOne( (session) => session.FirstPlayer.ID == userId || session.SecondPlayer.ID == userId );
     public GameSessionCard? GetCurrentSessionBySessionID(Guid sessionId) => gameSessioner.FindOne( (session) => session.ID == sessionId );
+
+    ~GameManager(){
+        Console.WriteLine("########################\n\nthat's nonsense\n\n(########################");
+    }
 }

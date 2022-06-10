@@ -7,5 +7,6 @@ public class GameUpdate{
     public List<int[]>? tail { get; set; }
     public List<int[]>? candies { get; set; }
     public int? score { get; set; }
+    public bool gamePause { get; set; } = false;
     public bool gameOver { get; set; } = false;
 } 

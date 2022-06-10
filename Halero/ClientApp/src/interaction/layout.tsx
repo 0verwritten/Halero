@@ -1,26 +1,32 @@
 import React from 'react';
 import "./css/layout.css";
-import cookies from "js-cookies";
+import { removeCookie } from "typescript-cookie";
 import image from "./imgs/arrow.svg";
 import { Link } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 
-export class SnakeLayout extends React.Component{
-    constructor(props){
+type SnakeLayputProps = {
+    children: (string | React.ReactElement)[];
+}
+
+export class SnakeLayout extends React.Component< SnakeLayputProps >{
+    private nav: React.RefObject<HTMLDivElement> = React.createRef();
+    private navClosingTimer: NodeJS.Timeout | null = null;
+    private navState = false;
+
+    constructor(props: SnakeLayputProps){
         super(props);
         this.state = {
             navState: false,
         }
-        this.nav = React.createRef();
-        this.navClosingTimer = null;
     }
 
-    toggleNavbar(state = !this.state.navState){
+    toggleNavbar(state = !this.navState){
         if(state)
-            this.nav.current.classList.add('active');
+            this.nav.current!.classList.add('active');
         else
-            this.nav.current.classList.remove('active');
-        this.setState({ navState: state });
+            this.nav.current!.classList.remove('active');
+        this.navState = state;
     }
 
     render(){
@@ -47,13 +53,13 @@ export class SnakeLayout extends React.Component{
                     <Link to="/online/active" className="hypernav">Active games</Link>
                     <button className="hypernav"
                         onClick={ () => {
-                            cookies.removeItem("accessToken");
-                            cookies.removeItem("refreshToken");
+                            removeCookie("accessToken", { path: "" });
+                            removeCookie("refreshToken", { path: "" });
                             window.location.reload();
                         }}>Log out</button>
                 </div>
                 <button className="slider" onClick={ e => this.toggleNavbar() }>
-                    <img src={image} alt="/\" />
+                    <img src={ image } alt="/\" />
                 </button>
             </nav>
             {

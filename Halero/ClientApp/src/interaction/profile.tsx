@@ -1,17 +1,17 @@
 import React from 'react';
-import { render } from 'react-dom';
-import image from './imgs/profile_pic.png';
+import { removeCookie } from 'typescript-cookie';
+import { UserProfileData } from '../models/user-profile-model';
 
 
-export class UserProfile extends React.Component{
-    constructor(props){
+export class UserProfile extends React.Component< {}, UserProfileData>{
+    constructor(props: {}){
         super(props);
 
         this.state = {
             userName: "",
-            userProfile: "",
-            userPic: ""
-        }
+            profileName: "",
+            pictureUri: ""
+        };
 
         this.updateInfo();
     }
@@ -22,12 +22,15 @@ export class UserProfile extends React.Component{
             headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
-            }}).then( resp => resp.json() ).then( data => {
-                this.setState({
-                    userName: data.userName,
-                    userProfile: data.profileName,
-                    userPic: data.pictureUri
-                });
+            }}).then( resp => { 
+                if (resp.status === 200)
+                    return resp.json();
+                
+                removeCookie("accessToken", { path: "/" });
+                removeCookie("refreshToken", { path: "/" }); 
+                window.location.reload();
+                }).then( (data: UserProfileData) => {
+                this.setState( data );
             });
     }
 
@@ -36,10 +39,10 @@ export class UserProfile extends React.Component{
         return (
             <div className="userProfello">
                 <div className="visitCard">
-                    <img src={ this.state.userPic } className="profilePic" alt="usery" />
+                    <img src={ this.state.pictureUri } className="profilePic" alt="usery" />
                     <div className="cardData">
                         <span className="profileNamo">
-                            { this.state.userProfile }
+                            { this.state.profileName }
                         </span>
                         <span className="userName">
                             { this.state.userName }

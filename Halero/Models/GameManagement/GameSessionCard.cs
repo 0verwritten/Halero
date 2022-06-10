@@ -12,4 +12,16 @@ public class GameSessionCard {
     public GameSessionCard(UserSessionCard firstPlayer){
         FirstPlayer = firstPlayer;
     }
+
+    public static GameSessionCard FromGameSessionGame(GameSessionData session){
+        GameSessionCard sessionVisit = new GameSessionCard();
+        sessionVisit.FirstPlayer = new UserSessionCard(){
+            ID = session.FirstUser.ID
+        };
+        sessionVisit.SecondPlayer = new UserSessionCard(){
+            ID = session.SecondUser.ID
+        };
+        sessionVisit.ID = session.ID;
+        return sessionVisit;
+    }
 }

@@ -10,6 +10,8 @@ public class GameSessionData{
 
     public List<int[]> candies { get; set; } = new List<int[]>() { new int[] { new Random().Next(20,280), new Random().Next(100,200) } };
 
+    public bool isOnPause { get; set; } = false;
+
 
     public GameSessionData(Guid id, UserSessionData first, UserSessionData second){
         this.ID = id;

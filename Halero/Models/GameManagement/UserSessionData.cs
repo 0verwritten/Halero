@@ -8,7 +8,7 @@ namespace Halero.Models.GameManagement;
 public class UserSessionData{
     public Guid ID { get; set; }
     [NonSerialized]
-    public WebSocket Socket;
+    public WebSocket? Socket;
     public SnakeDirection Direction { get; set; } = SnakeDirection.right;
     public List<int[]> Tail { get; set; }
     public UserSessionData( Guid id, List<int[]> tail, WebSocket socket, SnakeDirection direction = SnakeDirection.right){
