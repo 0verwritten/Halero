@@ -14,4 +14,10 @@ export class OpponentPlayer extends MainPlayer{
                 ){
         super(configuration, gameCanvas, tail, direction, socket, sessionID, false);
     }
+
+
+    setNewPosition(talo: Array<[number, number]>, direction: SnakeDirection){
+        this.tail = talo;
+        this.direction = direction;
+    }
 }

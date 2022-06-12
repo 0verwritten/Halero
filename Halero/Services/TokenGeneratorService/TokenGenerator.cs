@@ -62,7 +62,7 @@ class TokenGenerator : ITokenGenerator{
             exceptions.AddException(new Exception("Token format is invalid"));
             return exceptions;
         }
-        var accessTokenData = JsonSerializer.Deserialize<TokenBody>( signer.Base64Decoder(accessToken[1]) );
+        var accessTokenData = JsonSerializer.Deserialize<TokenBody>( signer.Base64Decoder(accessToken[1]) )!;
         if(signer.SignToken( signer.Base64Decoder(accessToken[1]), accessSecret) != token.AccessToken)
             exceptions.AddException(new Exception("That token is fraud"));
         else if( (DateTime.Now - accessTokenData.GenerationTime).TotalMinutes > accessTokenData.lifeTimeSpan )

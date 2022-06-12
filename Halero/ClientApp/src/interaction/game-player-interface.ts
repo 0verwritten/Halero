@@ -1,4 +1,5 @@
 import { GameState } from "../models/game-state-model";
+import { SnakeDirection } from "../models/snake-direction-model";
 
 export interface IGamePlayer{
     snakeColor: string;
@@ -13,6 +14,7 @@ export interface IGamePlayer{
 
     // returns snake current tail location
     getTail(): { tail: Array<[number, number]> };
+    setNewPosition(talo: Array<[number, number]>, direction: SnakeDirection): void;
 
     // updates the frame
     drawSnake(): void;
@@ -24,7 +26,7 @@ export interface IGamePlayer{
     pauseGame(): void;
 
     // gets new candy location is there is one
-    updateData(candies: Array<[number, number]>, opponent: IGamePlayer | undefined): void;
+    updateData(candies: Array<[number, number]> | undefined, opponent: IGamePlayer | undefined): void;
     
     // checks is current snakes intercapts with another
     checkSnakeInterception(player: {tail: Array<[number, number]>}): boolean;

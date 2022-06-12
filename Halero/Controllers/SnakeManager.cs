@@ -26,6 +26,10 @@ public class SnakeManagerController: ControllerBase
         _gameManager = gameManager;
     }
 
+    [ActionName("clearGames")]
+    [HttpGet]
+    public async Task<bool> ClearActiveGamesAsync() => await _gameManager.ClearActiveSessionsAsync();
+
     [ActionName("getUpdate")]
     [HttpGet]
     public async Task WebSocketReciever()
@@ -53,92 +57,123 @@ public class SnakeManagerController: ControllerBase
     {
         const int BUFSIZE = 1024 * 4;
         var buffer = new byte[BUFSIZE];
-        var receiveResult = await webSocket.ReceiveAsync(
-            new ArraySegment<byte>(buffer), CancellationToken.None);
+        WebSocketReceiveResult receiveResult;
         bool gameStarted = false;
         bool isPlayerInitiator = true;
         Guid? gameID = null;
         GameSessionData? gameSession = null;
 
-        while (!receiveResult.CloseStatus.HasValue)
+        do
         {
-                                            // removing all the zeroes in the end
-            var message = string.Join("", Encoding.UTF8.GetString( buffer ).TakeWhile((character) => character != 0));
-            if(!string.IsNullOrEmpty(message)){
-                var updateMessage =  JsonSerializer.Deserialize<GameUpdate>( message );
-                if(updateMessage != null){
-                    byte[] responceBytes = new byte[0];
-                    if(!gameStarted){
-                        var gameInfo = _gameManager.QuickStart( user.ID, webSocket, null );
-                        if(gameInfo.SecondPlayer == null){
-                            var responce = JsonSerializer.Serialize(new GameUpdate(){
-                                ID = gameInfo.ID,
-                                gameOver = false
-                            });
-                            responceBytes = Encoding.UTF8.GetBytes(responce);
-
-                        }else{
-                            gameSession = _gameManager.GetSession(gameInfo.ID);
-                            var responce = JsonSerializer.Serialize<GameSessionData>( _gameManager.GetSession(gameInfo.ID) );
-                            responceBytes = Encoding.UTF8.GetBytes(responce);
-
-                            _logger.LogInformation(responce);
-                            isPlayerInitiator = gameSession.FirstUser.ID == user.ID;
-                            
-                            _gameManager.UpdateSessionSocket(gameInfo.ID, user.ID, webSocket);
-
-                            if((gameSession.GetUserSession(!isPlayerInitiator).ID == user.ID))
-                                isPlayerInitiator = !isPlayerInitiator;
-                            if((gameSession.GetUserSession(!isPlayerInitiator).ID == user.ID))
-                                _logger.LogError("somehting is wrong");
-                            await gameSession.GetUserSession(!isPlayerInitiator).Socket!.SendAsync(
-                                new ArraySegment<byte>(responceBytes, 0, responceBytes.Length),
-                                WebSocketMessageType.Text,
-                                true,
-                                CancellationToken.None
-                            );
-                        }
-                        gameID = gameInfo.ID;
-                        gameStarted = true;
-
-                        await webSocket.SendAsync(
-                                    new ArraySegment<byte>(responceBytes, 0, responceBytes.Length),
-                                    WebSocketMessageType.Text,
-                                    true,
-                                    CancellationToken.None);
-                    }else{
-                        try{
-                        if(gameSession == null)
-                            gameSession = _gameManager.GetSession((Guid)gameID!);
-                        }catch (KeyNotFoundException){
-                            break;
-                        }
-                        if(updateMessage.direction is not null || updateMessage.candies is not null){
-                            await gameSession!.GetUserSession(!isPlayerInitiator).Socket!.SendAsync(
-                                new ArraySegment<byte>(buffer, 0, receiveResult.Count),
-                                WebSocketMessageType.Text,
-                                true,
-                                CancellationToken.None);
-
-                            buffer = Enumerable.Repeat<byte>(0, 10000).ToArray();
-                            receiveResult = await webSocket.ReceiveAsync(
-                                new ArraySegment<byte>(buffer), CancellationToken.None);
-
-                            try{
-                                _gameManager.UpdateSessionData(gameSession.ID, user.ID, updateMessage);
-                            }catch (KeyNotFoundException){
-                                break;
-                            }
-                            continue;
-                        }
-                    }
-                }
-            }
-            
             buffer = Enumerable.Repeat<byte>(0, 10000).ToArray();
             receiveResult = await webSocket.ReceiveAsync(
                 new ArraySegment<byte>(buffer), CancellationToken.None);
-        }
+
+                                            // removing all the zeroes in the end
+            var message = string.Join("", Encoding.UTF8.GetString( buffer ).TakeWhile((character) => character != 0));
+            if(string.IsNullOrEmpty(message))
+                continue;
+                
+            _logger.LogInformation(message);
+            var updateMessage =  JsonSerializer.Deserialize<GameUpdate>( message );
+
+            if( updateMessage is  null )
+                continue;
+        
+            byte[] responceBytes = new byte[0];
+
+            if( !gameStarted ){
+                GameSessionCard? gameInfo = null;
+                
+                if(updateMessage.ID != null)
+                    gameInfo = _gameManager.RejoinSession(user.ID, webSocket, updateMessage.ID );
+                    _logger.LogInformation($"rejoined Session initiation: { JsonSerializer.Serialize( gameInfo ) } -- {updateMessage.ID}");
+                if(gameInfo == null){
+                    if(updateMessage.ID != null)
+                        continue;
+                    gameInfo = _gameManager.QuickStart( user.ID, webSocket );
+                    _logger.LogInformation($"new Session initiation: { JsonSerializer.Serialize( gameInfo ) }");
+                }
+                
+
+                if(gameInfo.SecondPlayer == null){ // Created new session
+                    responceBytes = Encoding.UTF8.GetBytes(
+                                        JsonSerializer.Serialize(
+                                            new GameUpdate(){
+                                                ID = gameInfo.ID,
+                                                gameOver = false
+                                            }
+                                        )
+                                    );
+                }
+                else{
+                    gameSession = _gameManager.GetSession(gameInfo.ID);
+
+                    responceBytes = Encoding.UTF8.GetBytes(
+                                        JsonSerializer.Serialize<GameSessionData>( 
+                                            gameSession 
+                                        )
+                                    );
+
+                    isPlayerInitiator = gameSession.FirstUser.ID == user.ID;
+
+                    _gameManager.UpdateSessionSocket(gameInfo.ID, user.ID, webSocket);
+
+                    var reloadMessage = updateMessage.ID == null ? null : Encoding.UTF8.GetBytes(
+                                            JsonSerializer.Serialize<GameUpdate>( new GameUpdate{ 
+                                                ID = gameSession.ID, 
+                                                gamePause = false 
+                                            })
+                                        );
+
+                    await gameSession.GetUserSession(!isPlayerInitiator).Socket!.SendAsync(
+                        new ArraySegment<byte>(
+                            updateMessage.ID == null ? responceBytes : reloadMessage!, 
+                            0, 
+                            updateMessage.ID == null ? responceBytes.Length : reloadMessage!.Length
+                        ),
+                        WebSocketMessageType.Text,
+                        true,
+                        CancellationToken.None
+                    );
+                }
+                gameID = gameInfo.ID;
+                gameStarted = true;
+
+                await webSocket.SendAsync(
+                            new ArraySegment<byte>(responceBytes, 0, responceBytes.Length),
+                            WebSocketMessageType.Text,
+                            true,
+                            CancellationToken.None);
+            }
+            else{
+                _logger.LogInformation(message);
+                try{
+                if(gameSession == null)
+                    gameSession = _gameManager.GetSession((Guid)gameID!);
+                }catch (KeyNotFoundException){
+                    break;
+                }
+                if(updateMessage.direction is not null || updateMessage.candies is not null){
+                    if(gameSession!.GetUserSession(!isPlayerInitiator).ID == user.ID)
+                        isPlayerInitiator = !isPlayerInitiator;
+
+                    await gameSession!.GetUserSession(!isPlayerInitiator).Socket!.SendAsync(
+                        new ArraySegment<byte>(buffer, 0, receiveResult.Count),
+                        WebSocketMessageType.Text,
+                        true,
+                        CancellationToken.None);
+
+                    try{
+                        _gameManager.UpdateSessionData(gameSession.ID, user.ID, updateMessage);
+                    }catch (KeyNotFoundException){
+                        break;
+                    }
+                    continue;
+                }
+            }
+
+        }while (!receiveResult.CloseStatus.HasValue);
 
         _logger.LogWarning("session ended");
         try{
@@ -163,7 +198,7 @@ public class SnakeManagerController: ControllerBase
         }catch(KeyNotFoundException){
             _gameManager.EndSession((Guid)gameID!);
             await webSocket.CloseAsync(
-                receiveResult.CloseStatus.Value,
+                receiveResult.CloseStatus!.Value,
                 receiveResult.CloseStatusDescription,
                 CancellationToken.None);
         }

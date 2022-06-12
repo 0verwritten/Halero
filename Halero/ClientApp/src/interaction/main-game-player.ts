@@ -2,6 +2,7 @@ import { SnakeDirection } from "../models/snake-direction-model";
 import { SnakeGlobalConfig } from "../models/snake-config-model";
 import { IGamePlayer } from "./game-player-interface";
 import { GameState } from "../models/game-state-model";
+import { GameUpdate } from "../models/game-update-model";
 
 
 export class MainPlayer implements IGamePlayer{
@@ -39,6 +40,7 @@ export class MainPlayer implements IGamePlayer{
         this.config = configuration;
         this.gameCanvas = gameCanvas;
         this.socket = socket;
+        this.sessionID = sessionID;
         console.log("created");
 
         if(isMainPlayer)
@@ -75,6 +77,10 @@ export class MainPlayer implements IGamePlayer{
 
     getTail(): { tail: Array<[number, number]> } { 
         return { tail: this.tail }; 
+    }
+    
+    setNewPosition(talo: Array<[number, number]>, direction: SnakeDirection){
+        throw "You can't change your object";
     }
 
     drawSnake() {
@@ -126,7 +132,7 @@ export class MainPlayer implements IGamePlayer{
                 this.gameCanvas.fillRect( this.tail[i][0], this.tail[i][1], this.config.size, this.config.size );
             }
     
-            if(this.opponent != undefined){
+            if(this.opponent !== undefined){
                 this.gameCanvas.fillStyle = this.opponent!.snakeColor;
                 for(let i = 0; i < this.opponent!.getTail().tail.length; i++){
                     this.gameCanvas.fillRect( this.opponent!.getTail().tail[i][0], this.opponent!.getTail().tail[i][1], this.config.size, this.config.size );
@@ -135,16 +141,22 @@ export class MainPlayer implements IGamePlayer{
     
             let circleR = this.config.size / 3;
             this.gameCanvas.fillStyle = this.config.candyColor;
-            for(let i = 0;i < this.candies.length; i++){
+            for(let i = 0; i < this.candies.length; i++){
                 this.gameCanvas.beginPath();
                 this.gameCanvas.arc(this.candies[i][0] + circleR, this.candies[i][1] + circleR, circleR, 0, 2 * Math.PI, false);
                 this.gameCanvas.fill();
             }
     }
 
-    updateData(candies: Array<[number, number]>, opponent: IGamePlayer | undefined = undefined) {
-        this.candies = candies;
-        this.opponent = opponent
+    updateData(candies: Array<[number, number]> | undefined = undefined, opponent: IGamePlayer | undefined = undefined) {
+        this.forceRedraw();
+        
+        if(candies !== undefined)
+            this.candies = candies;
+
+        this.opponent = opponent;
+        if(this.opponent !== undefined)
+            this.opponent!.updateData(candies, undefined);
     }
     
     checkSnakeInterception(player: {tail: Array<[number, number]>}): boolean {
@@ -181,6 +193,8 @@ export class MainPlayer implements IGamePlayer{
                     ID: this.sessionID,
                     direction: newDirection,
                     tail: this.tail,
+                    candies: this.candies,
+                    gamePause: this.gameState == GameState.Waiting
                 }));
         }
     }
@@ -236,7 +250,8 @@ export class MainPlayer implements IGamePlayer{
             this.socket.send( JSON.stringify({ 
                 ID: this.sessionID,
                 candies: this.candies,
-                score: this.score
+                score: this.score,
+                gamePause: this.gameState == GameState.Waiting
             }) + "\0");
         }
 

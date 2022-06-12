@@ -13,6 +13,8 @@ public class GameManager : IGameManager{
         gameSessioner = new MongoDBManager<GameSessionCard>(sessionManager, "GameSessions");
         activeSessions = new Dictionary<Guid, GameSessionData>();
         pendingSessions = new Dictionary<Guid, WebSocket>();
+
+        gameSessioner.DeleteMany( session => true ); // because sessions' details are saving localy in ram
     }
 
     public void UpdateSessionData(Guid sessionId, Guid userId, GameUpdate gameUpdate){
@@ -34,6 +36,15 @@ public class GameManager : IGameManager{
             activeSessions[sessionId].candies = gameUpdate.candies;
     }
 
+    public async Task<bool> ClearActiveSessionsAsync(){
+        return await Task.Run(() =>{
+            activeSessions.Clear();
+            pendingSessions.Clear();
+            gameSessioner.DeleteMany( session => true );
+            return true;
+        });
+    }
+
     public void UpdateSessionSocket(Guid sessionId, Guid userId, WebSocket newSocker){
         if(activeSessions[sessionId].FirstUser.ID == userId)
             activeSessions[sessionId].FirstUser.Socket = newSocker;
@@ -42,7 +53,7 @@ public class GameManager : IGameManager{
     }
 
     public GameSessionData GetSession(Guid sessionID) {
-        if(gameSessioner.FindOne( (GameSessionCard card) => card.ID == sessionID) is not null)
+        if(gameSessioner.FindOne( card => card.ID == sessionID) is not null)
             return activeSessions[sessionID];
         else
             throw new KeyNotFoundException();
@@ -57,24 +68,39 @@ public class GameManager : IGameManager{
         return newSession;
     }
     public bool JoinSession(Guid UserId, ref GameSessionCard joinedGame, WebSocket socket){
-        GameSessionCard? gameToJoin = gameSessioner.FindOne( (GameSessionCard session) => session.SecondPlayer == null );
-        if(gameToJoin == null)
+        GameSessionCard? gameToJoin = gameSessioner.FindOne( session => session.FirstPlayer!.ID == UserId);
+        if(gameToJoin is not null){
+            joinedGame = gameToJoin;
+            return true;
+        }
+
+        gameToJoin = gameSessioner.FindOne( session => session.SecondPlayer == null );
+        if(gameToJoin is null)
             return false;
 
+
         gameToJoin.SecondPlayer = new UserSessionCard() { ID = UserId };
-        gameSessioner.UpdateOne( (session) => session.ID == gameToJoin.ID, gameToJoin);
+        gameSessioner.UpdateOne( session => session.ID == gameToJoin.ID, gameToJoin);
         joinedGame = gameToJoin;
         activeSessions.Add( joinedGame.ID, GameSessionData.FromGameSessionCard(gameToJoin, pendingSessions[gameToJoin.ID], socket) );
         return true;
     }
-    
-    public GameSessionCard QuickStart(Guid userId, WebSocket socket, string? gameSessionFromCookie){
-        if(gameSessionFromCookie != null){
+
+    public GameSessionCard? RejoinSession(Guid userId, WebSocket socket, Guid? lastGameSession){
+        if(lastGameSession != null){
             try{
-                Console.WriteLine("session reload");
-                return gameSessioner.FindOne( (sesion) => sesion.ID.ToString() == gameSessionFromCookie )!;
-            }catch(KeyNotFoundException) {}
+                return gameSessioner.FindOne( sesion => sesion.ID == lastGameSession );
+            }
+            catch(KeyNotFoundException) {}
         }
+        GameSessionCard resulting = new GameSessionCard();
+        if(!JoinSession(userId, ref resulting, socket))
+            return null;
+
+        return resulting;
+    }
+    
+    public GameSessionCard QuickStart(Guid userId, WebSocket socket){
         GameSessionCard resulting = new GameSessionCard();
         if(!JoinSession(userId, ref resulting, socket))
             return CreateSession(userId, socket);
@@ -84,13 +110,9 @@ public class GameManager : IGameManager{
 
     public void EndSession(Guid sessionID){
         activeSessions.Remove(sessionID);
-        gameSessioner.DeleteOne( (GameSessionCard card) => card.ID == sessionID );
+        gameSessioner.DeleteOne( card => card.ID == sessionID );
     }
 
-    public GameSessionCard? GetCurrentSessionByUserID(Guid userId) => gameSessioner.FindOne( (session) => session.FirstPlayer.ID == userId || session.SecondPlayer.ID == userId );
-    public GameSessionCard? GetCurrentSessionBySessionID(Guid sessionId) => gameSessioner.FindOne( (session) => session.ID == sessionId );
-
-    ~GameManager(){
-        Console.WriteLine("########################\n\nthat's nonsense\n\n(########################");
-    }
+    public GameSessionCard? GetCurrentSessionByUserID(Guid userId) => gameSessioner.FindOne( session => session.FirstPlayer!.ID == userId || session.SecondPlayer!.ID == userId );
+    public GameSessionCard? GetCurrentSessionBySessionID(Guid sessionId) => gameSessioner.FindOne( session => session.ID == sessionId );
 }

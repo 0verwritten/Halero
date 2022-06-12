@@ -25,10 +25,10 @@ public class AuthenticationController: ControllerBase{
     [HttpPost]
     public AuthenticationForm Register([FromBody] RegisterForm registerForm){
         var result = _userManager.SignUpUser(new UserClaims{
-            UserName = registerForm.userName,
-            ProfileName = registerForm.userProfileName,
-            Email = registerForm.email
-        }, registerForm.password);
+            UserName = registerForm.userName!,
+            ProfileName = registerForm.userProfileName!,
+            Email = registerForm.email!
+        }, registerForm.password!);
         
 
         return UMException<UserToken>.ToAuthenticationForm(result);
@@ -37,7 +37,7 @@ public class AuthenticationController: ControllerBase{
     [ActionName("Login")]
     [HttpPost]
     public AuthenticationForm Login([FromBody] LoginForm loginForm ){
-        var result = _userManager.LogInWithPassword( new UserClaims(){ UserName = loginForm.userName }, loginForm.password );
+        var result = _userManager.LogInWithPassword( new UserClaims(){ UserName = loginForm.userName! }, loginForm.password! );
 
         return UMException<UserToken>.ToAuthenticationForm(result);
     }
