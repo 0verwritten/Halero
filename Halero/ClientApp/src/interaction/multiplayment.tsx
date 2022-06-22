@@ -132,6 +132,7 @@ export class MultiplayerPlayment extends React.Component<{}, MultiPlaymentState>
 
                 this.player!.startGame();
                 this.opponent!.startGame();
+                this.opponent!.snakeColor = "#0000FF"
                 this.setState({ gameState: GameState.Running });
                 
                 // ability to restore sesson

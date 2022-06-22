@@ -3,6 +3,7 @@ import { SnakeGlobalConfig } from "../models/snake-config-model";
 import { IGamePlayer } from "./game-player-interface";
 import { GameState } from "../models/game-state-model";
 import { GameUpdate } from "../models/game-update-model";
+import { idText } from "typescript";
 
 
 export class MainPlayer implements IGamePlayer{
@@ -10,6 +11,7 @@ export class MainPlayer implements IGamePlayer{
     protected candies: Array<[number, number]> = []
 
     protected direction: SnakeDirection = SnakeDirection.Right;
+    private directionChangeTimer:number = 0;
     protected extend: number = 0;
     protected gameUpdate: NodeJS.Timer | null = null;
 
@@ -84,6 +86,7 @@ export class MainPlayer implements IGamePlayer{
     }
 
     drawSnake() {
+        // if(this.)
 
         let horizontal  = this.direction < 2 ? this.direction        * 2 - 1 : 0;
         let vertical    = this.direction >= 2 ? (this.direction % 2) * 2 - 1 : 0;      
@@ -98,7 +101,7 @@ export class MainPlayer implements IGamePlayer{
         if( y < 0 )     y = 290;
 
         
-        
+        console.log(this.checkSnakeInterception([x, y]));
         this.checkCandyIntercaption(x,y);
         if(this.candies.length === 0)
             this.getNewCandy();
@@ -113,6 +116,8 @@ export class MainPlayer implements IGamePlayer{
         else{
             this.extend--;
         }
+
+        this.directionChangeTimer = Math.max(0, this.directionChangeTimer - 1);
 
         
         this.tail.unshift([x, y]);
@@ -159,8 +164,25 @@ export class MainPlayer implements IGamePlayer{
             this.opponent!.updateData(candies, undefined);
     }
     
-    checkSnakeInterception(player: {tail: Array<[number, number]>}): boolean {
-        throw "Not implrmrnted yet!!";
+    checkSnakeInterception(head: [number, number]): boolean {
+        let in_between = (head: [number, number], tail: [number, number]) => {
+            return  tail[0] < head[0] && tail[0] + this.config.size > head[0] 
+                        &&
+                    tail[1] < head[1] && tail[1] + this.config.size > head[1] ;
+        };
+
+        head[0] += this.config.size/2;
+        head[1] += this.config.size/2;
+
+        // console.log(this.config.size / this.config.speed);
+
+        for(let i = this.config.size / this.config.speed; i < this.tail.length; i++){
+            if( in_between(head, this.tail[i]) ){
+                return false;
+            }
+        }
+
+        return true;
     }
     
     changeDirection(event: KeyboardEvent): void{
@@ -173,6 +195,8 @@ export class MainPlayer implements IGamePlayer{
                 window.location.reload();
         }
 
+        if(this.directionChangeTimer != 0)
+            return;
         if(event.key === "ArrowLeft" && this.direction !== SnakeDirection.Left){
             newDirection = SnakeDirection.Right;
         }
@@ -187,7 +211,8 @@ export class MainPlayer implements IGamePlayer{
         }
         if(this.direction !== newDirection){
             this.direction = newDirection
-            
+            this.directionChangeTimer = 10;
+
             if(this.socket !== undefined)
                 this.socket!.send( JSON.stringify({
                     ID: this.sessionID,

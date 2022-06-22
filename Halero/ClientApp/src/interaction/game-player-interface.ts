@@ -29,7 +29,7 @@ export interface IGamePlayer{
     updateData(candies: Array<[number, number]> | undefined, opponent: IGamePlayer | undefined): void;
     
     // checks is current snakes intercapts with another
-    checkSnakeInterception(player: {tail: Array<[number, number]>}): boolean;
+    // static checkSnakeInterception(player: {tail: Array<[number, number]>}): boolean;
     
     //// Features in most for main player
     // changes snake's direction
